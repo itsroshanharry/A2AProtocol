@@ -39,37 +39,54 @@ app.get('/.well-known/agent-card.json', (req, res) => {
 function handleRPC(req, res) {
   console.log('Received request:', JSON.stringify(req.body, null, 2));
 
-  const { jsonrpc, method, params, id } = req.body;
+  const body = req.body;
 
-  // Handle non-standard format
-  if (!jsonrpc && !method) {
-    if (req.body.skill || req.body.name) {
-      const name = req.body.name || (req.body.input && req.body.input.name) || "stranger";
-      
-      return res.json({
-        jsonrpc: "2.0",
-        result: {
-          type: "message",
-          content: {
-            type: "text",
-            text: `Hello, ${name}! Welcome to the A2A world! 👋`
-          }
-        },
-        id: req.body.id || 1
-      });
-    }
-  }
-
-  if (jsonrpc !== "2.0") {
+  // Format 1: Amethyst's custom format
+  // {"input": {"name": "john"}, "requestedAction": "greetuser"}
+  if (body.input && body.requestedAction) {
+    const name = body.input.name || "stranger";
+    
     return res.json({
-      jsonrpc: "2.0",
-      error: { code: -32600, message: "Invalid Request" },
-      id
+      success: true,
+      result: `Hello, ${name}! Welcome to the A2A world! 👋`
     });
   }
 
-  if (method === "message/send") {
-    const { skill, input } = params;
+  // Format 2: Amethyst's JSON-RPC format with nested message
+  // {"jsonrpc": "2.0", "method": "message/send", "params": {"message": {...}, "metadata": {...}}}
+  if (body.jsonrpc === "2.0" && body.method === "message/send") {
+    // Extract the name from the nested message parts
+    let name = "stranger";
+    
+    if (body.params && body.params.message && body.params.message.parts) {
+      const textPart = body.params.message.parts.find(p => p.kind === "text");
+      if (textPart && textPart.text) {
+        try {
+          const parsed = JSON.parse(textPart.text);
+          name = parsed.name || "stranger";
+        } catch (e) {
+          console.log('Could not parse text part:', textPart.text);
+        }
+      }
+    }
+    
+    return res.json({
+      jsonrpc: "2.0",
+      result: {
+        type: "message",
+        content: {
+          type: "text",
+          text: `Hello, ${name}! Welcome to the A2A world! 👋`
+        }
+      },
+      id: body.id
+    });
+  }
+
+  // Format 3: Standard A2A JSON-RPC format
+  // {"jsonrpc": "2.0", "method": "message/send", "params": {"skill": "greet", "input": {"name": "john"}}}
+  if (body.jsonrpc === "2.0" && body.method === "message/send" && body.params && body.params.skill) {
+    const { skill, input } = body.params;
 
     if (skill === "greet") {
       const name = input.name || "stranger";
@@ -83,21 +100,16 @@ function handleRPC(req, res) {
             text: `Hello, ${name}! Welcome to the A2A world! 👋`
           }
         },
-        id
+        id: body.id
       });
     }
-
-    return res.json({
-      jsonrpc: "2.0",
-      error: { code: -32601, message: "Unknown skill" },
-      id
-    });
   }
 
+  // Unknown format
   return res.json({
     jsonrpc: "2.0",
-    error: { code: -32601, message: "Method not found" },
-    id
+    error: { code: -32600, message: "Invalid Request" },
+    id: body.id
   });
 }
 
