@@ -42,7 +42,6 @@ function handleRPC(req, res) {
   const body = req.body;
 
   // Format 1: Amethyst's custom format
-  // {"input": {"name": "john"}, "requestedAction": "greetuser"}
   if (body.input && body.requestedAction) {
     const name = body.input.name || "stranger";
     
@@ -56,9 +55,7 @@ function handleRPC(req, res) {
   }
 
   // Format 2: Amethyst's JSON-RPC format with nested message
-  // {"jsonrpc": "2.0", "method": "message/send", "params": {"message": {...}, "metadata": {...}}}
   if (body.jsonrpc === "2.0" && body.method === "message/send") {
-    // Extract the name from the nested message parts
     let name = "stranger";
     
     if (body.params && body.params.message && body.params.message.parts) {
@@ -90,7 +87,6 @@ function handleRPC(req, res) {
   }
 
   // Format 3: Standard A2A JSON-RPC format
-  // {"jsonrpc": "2.0", "method": "message/send", "params": {"skill": "greet", "input": {"name": "john"}}}
   if (body.jsonrpc === "2.0" && body.method === "message/send" && body.params && body.params.skill) {
     const { skill, input } = body.params;
 
@@ -124,3 +120,12 @@ function handleRPC(req, res) {
   console.log('Sending error response:', JSON.stringify(errorResponse, null, 2));
   return res.json(errorResponse);
 }
+
+// JSON-RPC endpoints
+app.post('/rpc', handleRPC);
+app.post('/rpc/execute', handleRPC);
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Agent running on port ${PORT}`);
+});
