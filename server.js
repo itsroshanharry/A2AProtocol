@@ -36,25 +36,15 @@ app.get('/.well-known/agent-card.json', (req, res) => {
 });
 
 // Handle JSON-RPC request
-// Handle JSON-RPC request
 function handleRPC(req, res) {
-  // Log what we receive
-  console.log('=== Received Request ===');
-  console.log('Body:', JSON.stringify(req.body, null, 2));
-  console.log('=======================');
+  console.log('Received request:', JSON.stringify(req.body, null, 2));
 
   const { jsonrpc, method, params, id } = req.body;
 
-  // Check if it's standard JSON-RPC or Amethyst's format
+  // Handle non-standard format
   if (!jsonrpc && !method) {
-    // Maybe Amethyst sends a different format
-    console.log('Not standard JSON-RPC format');
-    
-    // Try to handle direct skill call
     if (req.body.skill || req.body.name) {
-      const skill = req.body.skill || 'greet';
-      const input = req.body.input || req.body;
-      const name = input.name || "stranger";
+      const name = req.body.name || (req.body.input && req.body.input.name) || "stranger";
       
       return res.json({
         jsonrpc: "2.0",
@@ -110,3 +100,12 @@ function handleRPC(req, res) {
     id
   });
 }
+
+// JSON-RPC endpoints
+app.post('/rpc', handleRPC);
+app.post('/rpc/execute', handleRPC);
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Agent running on port ${PORT}`);
+});
