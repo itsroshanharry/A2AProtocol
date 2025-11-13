@@ -46,10 +46,13 @@ function handleRPC(req, res) {
   if (body.input && body.requestedAction) {
     const name = body.input.name || "stranger";
     
-    return res.json({
+    const response = {
       success: true,
       result: `Hello, ${name}! Welcome to the A2A world! 👋`
-    });
+    };
+    
+    console.log('Sending response (Format 1):', JSON.stringify(response, null, 2));
+    return res.json(response);
   }
 
   // Format 2: Amethyst's JSON-RPC format with nested message
@@ -70,7 +73,7 @@ function handleRPC(req, res) {
       }
     }
     
-    return res.json({
+    const response = {
       jsonrpc: "2.0",
       result: {
         type: "message",
@@ -80,7 +83,10 @@ function handleRPC(req, res) {
         }
       },
       id: body.id
-    });
+    };
+    
+    console.log('Sending JSON-RPC response (Format 2):', JSON.stringify(response, null, 2));
+    return res.json(response);
   }
 
   // Format 3: Standard A2A JSON-RPC format
@@ -91,7 +97,7 @@ function handleRPC(req, res) {
     if (skill === "greet") {
       const name = input.name || "stranger";
       
-      return res.json({
+      const response = {
         jsonrpc: "2.0",
         result: {
           type: "message",
@@ -101,23 +107,20 @@ function handleRPC(req, res) {
           }
         },
         id: body.id
-      });
+      };
+      
+      console.log('Sending JSON-RPC response (Format 3):', JSON.stringify(response, null, 2));
+      return res.json(response);
     }
   }
 
   // Unknown format
-  return res.json({
+  const errorResponse = {
     jsonrpc: "2.0",
     error: { code: -32600, message: "Invalid Request" },
     id: body.id
-  });
+  };
+  
+  console.log('Sending error response:', JSON.stringify(errorResponse, null, 2));
+  return res.json(errorResponse);
 }
-
-// JSON-RPC endpoints
-app.post('/rpc', handleRPC);
-app.post('/rpc/execute', handleRPC);
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Agent running on port ${PORT}`);
-});
