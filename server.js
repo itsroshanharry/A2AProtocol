@@ -35,8 +35,8 @@ app.get('/.well-known/agent-card.json', (req, res) => {
   });
 });
 
-// JSON-RPC endpoint
-app.post('/rpc', (req, res) => {
+// Handle JSON-RPC request
+function handleRPC(req, res) {
   const { jsonrpc, method, params, id } = req.body;
 
   if (jsonrpc !== "2.0") {
@@ -78,10 +78,14 @@ app.post('/rpc', (req, res) => {
     error: { code: -32601, message: "Method not found" },
     id
   });
-});
+}
 
-const PORT = 3000;
+// JSON-RPC endpoints - handle both /rpc AND /rpc/execute
+app.post('/rpc', handleRPC);
+app.post('/rpc/execute', handleRPC);
+
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Agent running on http://localhost:${PORT}`);
-  console.log(`📋 Agent card: http://localhost:${PORT}/.well-known/agent-card.json`);
+  console.log(`✅ Agent running on port ${PORT}`);
+  console.log(`📋 Agent card: /.well-known/agent-card.json`);
 });
