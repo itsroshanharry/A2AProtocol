@@ -15,7 +15,7 @@ app.get('/.well-known/agent-card.json', (req, res) => {
     name: "Hello World Agent",
     version: "1.0.0",
     description: "A simple agent that greets users",
-    url: "https://your-ngrok-url/rpc",
+    url: "https://a2aprotocol.onrender.com/rpc",
     skills: [
       {
         name: "greet",
