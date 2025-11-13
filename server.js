@@ -1,0 +1,87 @@
+const express = require('express');
+const app = express();
+app.use(express.json());
+
+// Enable CORS
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+});
+
+// Agent card endpoint
+app.get('/.well-known/agent-card.json', (req, res) => {
+  res.json({
+    name: "Hello World Agent",
+    version: "1.0.0",
+    description: "A simple agent that greets users",
+    url: "https://your-ngrok-url/rpc",
+    skills: [
+      {
+        name: "greet",
+        description: "Greets a user by name",
+        parameters: {
+          type: "object",
+          properties: {
+            name: {
+              type: "string",
+              description: "The name of the person to greet"
+            }
+          },
+          required: ["name"]
+        }
+      }
+    ]
+  });
+});
+
+// JSON-RPC endpoint
+app.post('/rpc', (req, res) => {
+  const { jsonrpc, method, params, id } = req.body;
+
+  if (jsonrpc !== "2.0") {
+    return res.json({
+      jsonrpc: "2.0",
+      error: { code: -32600, message: "Invalid Request" },
+      id
+    });
+  }
+
+  if (method === "message/send") {
+    const { skill, input } = params;
+
+    if (skill === "greet") {
+      const name = input.name || "stranger";
+      
+      return res.json({
+        jsonrpc: "2.0",
+        result: {
+          type: "message",
+          content: {
+            type: "text",
+            text: `Hello, ${name}! Welcome to the A2A world! 👋`
+          }
+        },
+        id
+      });
+    }
+
+    return res.json({
+      jsonrpc: "2.0",
+      error: { code: -32601, message: "Unknown skill" },
+      id
+    });
+  }
+
+  return res.json({
+    jsonrpc: "2.0",
+    error: { code: -32601, message: "Method not found" },
+    id
+  });
+});
+
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`✅ Agent running on http://localhost:${PORT}`);
+  console.log(`📋 Agent card: http://localhost:${PORT}/.well-known/agent-card.json`);
+});
